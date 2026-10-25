@@ -1,0 +1,62 @@
+name: build
+
+on:
+  push:
+    branches: [main, master]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Версия
+        id: ver
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "v=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "v=dev-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Проверка
+        run: go vet ./...
+
+      - name: Сборка winfix.exe
+        env:
+          CGO_ENABLED: '0'
+          GOOS: windows
+          GOARCH: amd64
+        run: go build -trimpath -ldflags "-s -w -X main.version=${{ steps.ver.outputs.v }}" -o dist/winfix.exe ./cmd/winfix
+
+      - name: Проверка запуска
+        run: ./dist/winfix.exe version
+
+      - name: Контрольная сумма
+        shell: pwsh
+        run: (Get-FileHash dist/winfix.exe -Algorithm SHA256).Hash.ToLower() + "  winfix.exe" | Out-File dist/winfix.exe.sha256 -Encoding ascii
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: winfix-windows-amd64
+          path: dist/*
+
+      - name: Релиз (по тегу v*)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/winfix.exe
+            dist/winfix.exe.sha256
+          generate_release_notes: true
