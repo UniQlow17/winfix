@@ -92,10 +92,9 @@ winfix drivers report           проверка драйверов без из�
 
 ## Сборка на GitHub
 
-Workflow `.github/workflows/build.yml` собирает один статический `winfix.exe` (без CGO и внешних зависимостей):
-
-Запускается только при создании тега `v*`: `go vet`, сборка, проверка запуска, затем **Release** с `winfix.exe` и `winfix.exe.sha256`
+Workflow `.github/workflows/build.yml` собирает один статический `winfix.exe` (без CGO и внешних зависимостей). Запускается только при создании тега `v*`: `go vet`, сборка, проверка запуска, затем **Release** с `winfix.exe` и `winfix.exe.sha256`
 (копия также лежит в **Actions → запуск → Artifacts**):
+
 
 ```
 git tag v1.0.0
